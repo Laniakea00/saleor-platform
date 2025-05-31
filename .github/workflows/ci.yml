@@ -30,6 +30,9 @@ jobs:
       with:
         submodules: recursive
 
+    - name: List files for debugging
+      run: ls -la && ls -la saleor
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -37,10 +40,10 @@ jobs:
 
     - name: Install backend dependencies
       run: |
-        cd saleor/
+        cd saleor
         pip install -r requirements.txt
 
     - name: Run backend tests
       run: |
-        cd saleor/
+        cd saleor
         pytest
