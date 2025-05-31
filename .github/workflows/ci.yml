@@ -1,0 +1,57 @@
+name: Saleor CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        ports: ['5432:5432']
+        env:
+          POSTGRES_DB: saleor
+          POSTGRES_USER: saleor
+          POSTGRES_PASSWORD: saleor
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install Backend Dependencies
+      run: |
+        cd saleor/
+        pip install -r requirements.txt
+
+    - name: Install Frontend Dependencies
+      run: |
+        cd dashboard/
+        npm install
+
+    - name: Run Backend Tests
+      run: |
+        cd saleor/
+        pytest
+
+    - name: Build Frontend
+      run: |
+        cd dashboard/
+        npm run build
