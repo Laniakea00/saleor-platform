@@ -33,10 +33,9 @@ pipeline {
                         'http://host.docker.internal:9000',           // Dashboard
                         'http://host.docker.internal:5432',           // Postgres
                         'http://host.docker.internal:6379',           // Redis
-                        'http://host.docker.internal:9090',           // Prometheus
-                        'http://host.docker.internal:3000',           // Grafana
+                        'http://host.docker.internal:9121',           // Redis-exporter
                         'http://host.docker.internal:16686',          // Jaeger
-                        'http://host.docker.internal:5601'            // Kibana
+
                     ]
 
                     for (url in servicesToCheck) {
