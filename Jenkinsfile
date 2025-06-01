@@ -21,6 +21,16 @@ pipeline {
             }
         }
 
+        stage('Install Poetry') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install poetry
+                '''
+            }
+        }
+
         stage('Start Monitoring Services') {
             steps {
                 sh 'docker-compose -f devops-compose.yml up -d'
