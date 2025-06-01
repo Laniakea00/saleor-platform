@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.12'
+        }
+    }
 
     environment {
         COMPOSE_FILE = 'devops-compose.yml'
@@ -64,11 +68,9 @@ pipeline {
             steps {
                 dir('saleor') {
                     echo 'Installing dependencies and running tests...'
-                    sh '''
-                        pip install poetry
-                        poetry install
-                        poetry run pytest
-                    '''
+                    sh 'pip install poetry'
+                    sh 'poetry install'
+                    sh 'poetry run pytest'
                 }
             }
         }
