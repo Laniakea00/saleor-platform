@@ -11,7 +11,6 @@ scrape_configs:
       - targets: ['redis-exporter:9121']
     metrics_path: /metrics
 
-  - job_name: 'saleor-dashboard'
-    metrics_path: /
+  - job_name: 'node-exporter'
     static_configs:
-      - targets: ['saleor-dashboard:9000']
+      - targets: ['node-exporter:9100']

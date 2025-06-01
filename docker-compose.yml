@@ -1,0 +1,189 @@
+services:
+  # api:
+  #   image: ghcr.io/saleor/saleor:3.20
+  #   ports:
+  #     - 8000:8000
+  #   restart: unless-stopped
+  #   networks:
+  #     - saleor-backend-tier
+  #   stdin_open: true
+  #   tty: true
+  #   depends_on:
+  #     - db
+  #     - redis
+  #     - jaeger
+  #   volumes:
+  #     # shared volume between worker and api for media
+  #     - saleor-media:/app/media
+  #   env_file:
+  #     - common.env
+  #     - backend.env
+  #   environment:
+  #     - JAEGER_AGENT_HOST=jaeger
+  #     - DASHBOARD_URL=http://localhost:9000/
+  #     - ALLOWED_HOSTS=localhost,api
+
+  # dashboard:
+  #   image: ghcr.io/saleor/saleor-dashboard:latest
+  #   ports:
+  #     - 9000:80
+  #   restart: unless-stopped
+
+  # db:
+  #   image: library/postgres:15-alpine
+  #   ports:
+  #     - 5432:5432
+  #   restart: unless-stopped
+  #   networks:
+  #     - saleor-backend-tier
+  #   volumes:
+  #     - saleor-db:/var/lib/postgresql/data
+  #     - ./replica_user.sql:/docker-entrypoint-initdb.d/replica_user.sql
+  #   environment:
+  #     - POSTGRES_USER=saleor
+  #     - POSTGRES_PASSWORD=saleor
+
+  # redis:
+  #   image: library/redis:7.0-alpine
+  #   ports:
+  #     - 6379:6379
+  #   restart: unless-stopped
+  #   networks:
+  #     - saleor-backend-tier
+  #   volumes:
+  #     - saleor-redis:/data
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    ports:
+      - "9121:9121"
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+
+  # worker:
+  #   image: ghcr.io/saleor/saleor:3.20
+  #   command: celery -A saleor --app=saleor.celeryconf:app worker --loglevel=info -B
+  #   restart: unless-stopped
+  #   networks:
+  #     - saleor-backend-tier
+  #   env_file:
+  #     - common.env
+  #     - backend.env
+  #   depends_on:
+  #     - redis
+  #     - mailpit
+  #   volumes:
+  #     # shared volume between worker and api for media
+  #     - saleor-media:/app/media
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    volumes:
+      - type: tmpfs
+        target: /tmp
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - 1025:1025 # smtp server
+      - 8025:8025 # web ui. Visit http://localhost:8025/ to check emails
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: saleor-grafana-1
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=smtp.gmail.com:587
+      - GF_SMTP_USER=alan06b@gmail.com
+      - GF_SMTP_PASSWORD=fxznbzbsskixkiwz
+      - GF_SMTP_FROM_ADDRESS=alan06b@gmail.com
+      - GF_SMTP_FROM_NAME="Grafana Alerts"
+      - GF_SMTP_STARTTLS_POLICY=OpportunisticStartTLS
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.13
+    container_name: elasticsearch-saleor
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.13
+    container_name: kibana-saleor
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.13
+    container_name: logstash-saleor
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logs:/logs
+    ports:
+      - "5044:5044"
+    depends_on:
+      - elasticsearch
+
+  node-exporter:
+    image: prom/node-exporter
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+
+volumes:
+  grafana_data:
+    driver: local
+  saleor-db:
+    driver: local
+  saleor-redis:
+    driver: local
+  saleor-media:
+  esdata:
+
+networks:
+  saleor-backend-tier:
+    driver: bridge

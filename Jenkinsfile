@@ -60,6 +60,19 @@ pipeline {
             }
         }
 
+        stage('Run Tests') {
+            steps {
+                dir('saleor') {
+                    echo 'Installing dependencies and running tests...'
+                    sh '''
+                        pip install poetry
+                        poetry install
+                        poetry run pytest
+                    '''
+                }
+            }
+        }
+
         stage('Cleanup Monitoring') {
             steps {
                 sh 'docker-compose -f devops-compose.yml down'
