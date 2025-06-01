@@ -15,18 +15,17 @@ pipeline {
             steps {
                 sh '''
                     apt-get update
-                    apt-get install -y python3 python3-pip python3.11-venv curl netcat-openbsd
+                    apt-get install -y python3 python3-pip curl netcat-openbsd
                 '''
             }
         }
 
-        stage('Create venv and Install Poetry') {
+        stage('Install Poetry and Dependencies') {
             steps {
                 sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
                     pip install --upgrade pip
                     pip install poetry
+                    poetry install
                 '''
             }
         }
@@ -81,13 +80,7 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                dir('saleor') {
-                    echo 'Installing dependencies and running tests...'
-                    sh '''
-                        ../venv/bin/poetry install
-                        ../venv/bin/poetry run pytest
-                    '''
-                }
+                sh 'poetry run pytest'
             }
         }
 
