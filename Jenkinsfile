@@ -29,14 +29,14 @@ pipeline {
             steps {
                 script {
                     def servicesToCheck = [
-                        'http://localhost:8000/health',    // Saleor API
-                        'http://localhost:9000',           // Dashboard
-                        'http://localhost:5432',           // Postgres
-                        'http://localhost:6379',           // Redis
-                        'http://localhost:9090',           // Prometheus
-                        'http://localhost:3000',           // Grafana
-                        'http://localhost:16686',          // Jaeger
-                        'http://localhost:5601'            // Kibana
+                        'http://host.docker.internal:8000/health',    // Saleor API
+                        'http://host.docker.internal:9000',           // Dashboard
+                        'http://host.docker.internal:5432',           // Postgres
+                        'http://host.docker.internal:6379',           // Redis
+                        'http://host.docker.internal:9090',           // Prometheus
+                        'http://host.docker.internal:3000',           // Grafana
+                        'http://host.docker.internal:16686',          // Jaeger
+                        'http://host.docker.internal:5601'            // Kibana
                     ]
 
                     for (url in servicesToCheck) {
