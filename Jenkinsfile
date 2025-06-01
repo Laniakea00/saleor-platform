@@ -16,7 +16,7 @@ pipeline {
             steps {
                 sh '''
                     apt-get update
-                    apt-get install -y netcat python3 python3-pip
+                    apt-get install -y netcat-openbsd python3 python3-pip
                 '''
             }
         }
