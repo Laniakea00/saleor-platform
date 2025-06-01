@@ -56,7 +56,7 @@ resource "docker_container" "db" {
   }
 
   volumes {
-    host_path      = "C:\\Users\\alanb\\OneDrive\\Рабочий стол\\saleor-platform\\terraform\\replica_user.sql"
+    host_path      = "C:\\Users\\alanb\\saleor-platform\\terraform\\replica_user.sql"
     container_path = "/docker-entrypoint-initdb.d/replica_user.sql"
   }
 
