@@ -25,22 +25,36 @@ pipeline {
             }
         }
 
-        stage('Check Running Services (Terraform + Monitoring)') {
+        stage('Check Running Services') {
             steps {
                 script {
-                    def servicesToCheck = [
-                        'http://host.docker.internal:8000/health',    // Saleor API
-                        'http://host.docker.internal:9000',           // Dashboard
-                        'http://host.docker.internal:5432',           // Postgres
-                        'http://host.docker.internal:6379',           // Redis
-                        'http://host.docker.internal:9121',           // Redis-exporter
-                        'http://host.docker.internal:16686',          // Jaeger
-
+                    def httpServices = [
+                        'http://host.docker.internal:8000/health',
+                        'http://host.docker.internal:9000',
+                        'http://host.docker.internal:9121',
+                        'http://host.docker.internal:16686'
+                    ]
+                    def tcpServices = [
+                        [host: 'host.docker.internal', port: 5432],
+                        [host: 'host.docker.internal', port: 6379]
                     ]
 
-                    for (url in servicesToCheck) {
+                    httpServices.each { url ->
                         echo "Checking ${url} ..."
-                        sh "curl -f ${url} || echo 'WARNING: ${url} not available!'"
+                            try {
+                                sh "curl -f ${url}"
+                            } catch (e) {
+                                echo "WARNING: ${url} not available!"
+                            }
+                    }
+
+                    tcpServices.each { s ->
+                        echo "Checking TCP ${s.host}:${s.port} ..."
+                        try {
+                            sh "nc -zv ${s.host} ${s.port}"
+                        } catch (e) {
+                            echo "WARNING: TCP ${s.host}:${s.port} not available!"
+                        }
                     }
                 }
             }
