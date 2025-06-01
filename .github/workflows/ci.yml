@@ -36,7 +36,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.12'
 
     - name: Install Poetry
       run: |
@@ -47,6 +47,18 @@ jobs:
       run: |
         cd saleor
         poetry install
+
+    - name: Set environment variable
+      run: echo "DATABASE_URL=postgresql://saleor:saleor@localhost:5432/saleor" >> $GITHUB_ENV
+
+    - name: Wait for PostgreSQL to be ready
+      run: |
+        for i in {1..10}; do
+          pg_isready -h localhost -p 5432 && echo "Postgres is ready" && exit 0
+          echo "Waiting for Postgres..."
+          sleep 3
+        done
+        echo "Postgres did not start in time" && exit 1
 
     - name: Run backend tests
       run: |
