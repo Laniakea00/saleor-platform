@@ -5,10 +5,6 @@ pipeline {
         PATH = "/root/.local/bin:$PATH"
     }
 
-    environment {
-        COMPOSE_FILE = 'devops-compose.yml'
-    }
-
     stages {
         stage('Checkout') {
             steps {
