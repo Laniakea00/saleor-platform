@@ -83,9 +83,10 @@ pipeline {
             steps {
                 dir('saleor') {
                     echo 'Installing dependencies and running tests...'
-                    sh 'pip install poetry'
-                    sh 'poetry install'
-                    sh 'poetry run pytest'
+                    sh '''
+                        ../venv/bin/poetry install
+                        ../venv/bin/poetry run pytest
+                    '''
                 }
             }
         }
