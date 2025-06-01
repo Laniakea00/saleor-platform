@@ -2,7 +2,6 @@ pipeline {
     agent any
     environment {
         COMPOSE_FILE = 'devops-compose.yml'
-        PATH = "/root/.local/bin:$PATH"
     }
 
     stages {
@@ -16,16 +15,17 @@ pipeline {
             steps {
                 sh '''
                     apt-get update
-                    apt-get install -y netcat-openbsd python3 python3-pip python3.11-venv
+                    apt-get install -y python3 python3-pip python3.11-venv curl netcat-openbsd
                 '''
             }
         }
 
-        stage('Install Poetry') {
+        stage('Create venv and Install Poetry') {
             steps {
                 sh '''
                     python3 -m venv venv
                     . venv/bin/activate
+                    pip install --upgrade pip
                     pip install poetry
                 '''
             }
@@ -84,8 +84,9 @@ pipeline {
                 dir('saleor') {
                     echo 'Installing dependencies and running tests...'
                     sh '''
-                        ../venv/bin/poetry install
-                        ../venv/bin/poetry run pytest
+                        . ../venv/bin/activate
+                        poetry install
+                        poetry run pytest
                     '''
                 }
             }
