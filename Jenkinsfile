@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/saleor/saleor-platform.git', branch: 'main'
+                git url: 'https://github.com/Laniakea00/saleor-platform', branch: 'main'
             }
         }
 
