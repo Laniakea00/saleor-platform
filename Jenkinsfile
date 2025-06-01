@@ -12,6 +12,15 @@ pipeline {
             }
         }
 
+        stage('Setup Tools') {
+            steps {
+                sh '''
+                    apt-get update
+                    apt-get install -y netcat python3 python3-pip
+                '''
+            }
+        }
+
         stage('Start Monitoring Services') {
             steps {
                 sh 'docker-compose -f devops-compose.yml up -d'
@@ -41,11 +50,11 @@ pipeline {
 
                     httpServices.each { url ->
                         echo "Checking ${url} ..."
-                            try {
-                                sh "curl -f ${url}"
-                            } catch (e) {
-                                echo "WARNING: ${url} not available!"
-                            }
+                        try {
+                            sh "curl -f ${url}"
+                        } catch (e) {
+                            echo "WARNING: ${url} not available!"
+                        }
                     }
 
                     tcpServices.each { s ->
