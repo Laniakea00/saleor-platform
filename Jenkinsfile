@@ -84,9 +84,8 @@ pipeline {
                 dir('saleor') {
                     echo 'Installing dependencies and running tests...'
                     sh '''
-                        . ../venv/bin/activate
-                        poetry install
-                        poetry run pytest
+                        ../venv/bin/poetry install
+                        ../venv/bin/poetry run pytest
                     '''
                 }
             }
