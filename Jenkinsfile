@@ -1,8 +1,8 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.12'
-        }
+    agent any
+    environment {
+        COMPOSE_FILE = 'devops-compose.yml'
+        PATH = "/root/.local/bin:$PATH"
     }
 
     environment {
