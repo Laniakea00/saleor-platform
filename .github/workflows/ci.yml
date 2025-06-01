@@ -51,4 +51,4 @@ jobs:
     - name: Run backend tests
       run: |
         cd saleor
-        pytest
+        poetry run pytest
