@@ -1,4 +1,85 @@
+version: "3.4"
+
 services:
+  api:
+     image: ghcr.io/saleor/saleor:3.20
+     ports:
+       - 8000:8000
+     restart: unless-stopped
+     networks:
+       - saleor-backend-tier
+     stdin_open: true
+     tty: true
+     depends_on:
+       - db
+       - redis
+       - jaeger
+     volumes:
+       - saleor-media:/app/media
+     env_file:
+       - common.env
+       - backend.env
+     environment:
+       - JAEGER_AGENT_HOST=jaeger
+       - DASHBOARD_URL=http://localhost:9000/
+       - ALLOWED_HOSTS=localhost,api
+
+  dashboard:
+     image: ghcr.io/saleor/saleor-dashboard:latest
+     ports:
+       - 9000:80
+     restart: unless-stopped
+
+  db:
+     image: library/postgres:15-alpine
+     ports:
+       - 5432:5432
+     restart: unless-stopped
+     networks:
+       - saleor-backend-tier
+     volumes:
+       - saleor-db:/var/lib/postgresql/data
+       - ./replica_user.sql:/docker-entrypoint-initdb.d/replica_user.sql
+     environment:
+       - POSTGRES_USER=saleor
+       - POSTGRES_PASSWORD=saleor
+
+  redis:
+     image: library/redis:7.0-alpine
+     ports:
+       - 6379:6379
+     restart: unless-stopped
+     networks:
+       - saleor-backend-tier
+     volumes:
+       - saleor-redis:/data
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    ports:
+      - "9121:9121"
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+
+  worker:
+     image: ghcr.io/saleor/saleor:3.20
+     command: celery -A saleor --app=saleor.celeryconf:app worker --loglevel=info -B
+     restart: unless-stopped
+     networks:
+       - saleor-backend-tier
+     env_file:
+       - common.env
+       - backend.env
+     depends_on:
+       - redis
+       - mailpit
+     volumes:
+       # shared volume between worker and api for media
+       - saleor-media:/app/media
+
   jaeger:
     image: jaegertracing/all-in-one
     ports:
@@ -15,14 +96,10 @@ services:
       - type: tmpfs
         target: /tmp
 
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
+  mailpit:
+    image: axllent/mailpit
     ports:
-      - 9090:9090
+      - 8025:8025 # web ui. Visit http://localhost:8025/ to check emails
     restart: unless-stopped
     networks:
       - saleor-backend-tier
@@ -62,17 +139,6 @@ services:
     container_name: kibana-saleor
     ports:
       - "5601:5601"
-    depends_on:
-      - elasticsearch
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:7.17.13
-    container_name: logstash-saleor
-    volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - ./logs:/logs
-    ports:
-      - "5044:5044"
     depends_on:
       - elasticsearch
 
