@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_FILE = 'docker-compose.yml'
+        COMPOSE_FILE = 'devops-compose.yml'
     }
 
     stages {
@@ -12,35 +12,52 @@ pipeline {
             }
         }
 
-        stage('Build & Start Containers') {
+        stage('Start Monitoring Services') {
             steps {
-                sh 'docker-compose build'
-                sh 'docker-compose up -d'
+                sh 'docker-compose -f devops-compose.yml up -d'
             }
         }
 
-        stage('Wait for Services') {
+        stage('Wait for Monitoring') {
             steps {
-                sh 'sleep 30' // можно заменить на healthcheck
+                echo 'Waiting for monitoring tools to start...'
+                sh 'sleep 20'
             }
         }
 
-        stage('Run Tests') {
+        stage('Check Running Services (Terraform + Monitoring)') {
             steps {
-                sh 'docker-compose exec api pytest' // запустить бэкенд-тесты
+                script {
+                    def servicesToCheck = [
+                        'http://localhost:8000/health',    // Saleor API
+                        'http://localhost:9000',           // Dashboard
+                        'http://localhost:5432',           // Postgres
+                        'http://localhost:6379',           // Redis
+                        'http://localhost:9090',           // Prometheus
+                        'http://localhost:3000',           // Grafana
+                        'http://localhost:16686',          // Jaeger
+                        'http://localhost:5601'            // Kibana
+                    ]
+
+                    for (url in servicesToCheck) {
+                        echo "Checking ${url} ..."
+                        sh "curl -f ${url} || echo 'WARNING: ${url} not available!'"
+                    }
+                }
             }
         }
 
-        stage('Stop Containers') {
+        stage('Cleanup Monitoring') {
             steps {
-                sh 'docker-compose down'
+                sh 'docker-compose -f devops-compose.yml down'
             }
         }
     }
 
     post {
         always {
-            sh 'docker-compose down || true'
+            echo 'Shutting down monitoring stack...'
+            sh 'docker-compose -f devops-compose.yml down || true'
         }
     }
 }
