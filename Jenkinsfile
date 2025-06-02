@@ -1,7 +1,9 @@
 pipeline {
     agent any
+
     environment {
         COMPOSE_FILE = 'devops-compose.yml'
+        VENV_DIR = '.venv'
     }
 
     stages {
@@ -11,20 +13,32 @@ pipeline {
             }
         }
 
-        stage('Setup Tools') {
+        stage('Setup Python and Tools') {
             steps {
                 sh '''
                     apt-get update
-                    apt-get install -y python3 python3-pip curl netcat-openbsd
+                    apt-get install -y python3-full python3-venv curl netcat-openbsd
                 '''
             }
         }
 
-        stage('Install Poetry and Dependencies') {
+        stage('Create Venv and Install Poetry') {
             steps {
                 sh '''
-                    pip install --upgrade pip
-                    pip install poetry
+                    python3 -m venv ${VENV_DIR}
+                    . ${VENV_DIR}/bin/activate
+                    curl -sSL https://install.python-poetry.org | python3 -
+                    export PATH="$HOME/.local/bin:$PATH"
+                    poetry --version
+                '''
+            }
+        }
+
+        stage('Install Dependencies with Poetry') {
+            steps {
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    export PATH="$HOME/.local/bin:$PATH"
                     poetry install
                 '''
             }
@@ -32,7 +46,7 @@ pipeline {
 
         stage('Start Monitoring Services') {
             steps {
-                sh 'docker-compose -f devops-compose.yml up -d'
+                sh 'docker-compose -f ${COMPOSE_FILE} up -d'
             }
         }
 
@@ -80,13 +94,17 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh 'poetry run pytest'
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    export PATH="$HOME/.local/bin:$PATH"
+                    poetry run pytest
+                '''
             }
         }
 
         stage('Cleanup Monitoring') {
             steps {
-                sh 'docker-compose -f devops-compose.yml down'
+                sh 'docker-compose -f ${COMPOSE_FILE} down'
             }
         }
     }
@@ -94,7 +112,7 @@ pipeline {
     post {
         always {
             echo 'Shutting down monitoring stack...'
-            sh 'docker-compose -f devops-compose.yml down || true'
+            sh 'docker-compose -f ${COMPOSE_FILE} down || true'
         }
     }
 }
