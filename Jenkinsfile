@@ -3,7 +3,7 @@ pipeline {
 
     environment {
     COMPOSE_FILE = 'devops-compose.yml'
-    SALEOR_DIR = '.'
+    SALEOR_DIR = 'saleor'
     }
 
     stages {
