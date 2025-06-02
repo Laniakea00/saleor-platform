@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_FILE = 'devops-compose.yml'
-        SALEOR_DIR = 'saleor'
+    COMPOSE_FILE = 'devops-compose.yml'
+    SALEOR_DIR = '.'
     }
 
     stages {
