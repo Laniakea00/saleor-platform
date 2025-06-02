@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         COMPOSE_FILE = 'devops-compose.yml'
-        VENV_DIR = '.venv'
+        SALEOR_DIR = 'saleor'
     }
 
     stages {
@@ -13,34 +13,26 @@ pipeline {
             }
         }
 
-        stage('Setup Python and Tools') {
+        stage('Install System Tools') {
             steps {
                 sh '''
                     apt-get update
-                    apt-get install -y python3-full python3-venv curl netcat-openbsd
+                    apt-get install -y python3 python3-pip python3-venv curl netcat-openbsd
                 '''
             }
         }
 
-        stage('Create Venv and Install Poetry') {
+        stage('Setup Python Environment & Install Dependencies') {
             steps {
-                sh '''
-                    python3 -m venv ${VENV_DIR}
-                    . ${VENV_DIR}/bin/activate
-                    curl -sSL https://install.python-poetry.org | python3 -
-                    export PATH="$HOME/.local/bin:$PATH"
-                    poetry --version
-                '''
-            }
-        }
-
-        stage('Install Dependencies with Poetry') {
-            steps {
-                sh '''
-                    . ${VENV_DIR}/bin/activate
-                    export PATH="$HOME/.local/bin:$PATH"
-                    poetry install
-                '''
+                dir("${SALEOR_DIR}") {
+                    sh '''
+                        python3 -m venv .venv
+                        . .venv/bin/activate
+                        pip install --upgrade pip
+                        pip install poetry
+                        poetry install
+                    '''
+                }
             }
         }
 
@@ -94,11 +86,12 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh '''
-                    . ${VENV_DIR}/bin/activate
-                    export PATH="$HOME/.local/bin:$PATH"
-                    poetry run pytest
-                '''
+                dir("${SALEOR_DIR}") {
+                    sh '''
+                        . .venv/bin/activate
+                        poetry run pytest
+                    '''
+                }
             }
         }
 
