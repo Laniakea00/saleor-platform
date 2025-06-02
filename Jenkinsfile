@@ -13,15 +13,6 @@ pipeline {
             }
         }
 
-        stage('Install System Tools') {
-            steps {
-                sh '''
-                    apt-get update
-                    apt-get install -y python3 python3-pip python3-venv curl netcat-openbsd
-                '''
-            }
-        }
-
         stage('Start Monitoring Services') {
             steps {
                 sh 'docker-compose -f ${COMPOSE_FILE} up -d'
