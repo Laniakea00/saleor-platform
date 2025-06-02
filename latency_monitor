@@ -1,0 +1,47 @@
+import requests
+import smtplib
+from email.mime.text import MIMEText
+from datetime import datetime
+
+# Конфигурация
+PROMETHEUS_URL = "http://localhost:9090"
+PROMQL_QUERY = 'avg_over_time(http_request_duration_seconds[5m])'
+LATENCY_THRESHOLD = 0.5  # в секундах
+ALERT_EMAIL = "alan06b@gmail.com"
+
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_USER = "alan06b@gmail.com"
+SMTP_PASSWORD = "fxznbzbsskixkiwz"
+
+def fetch_latency():
+    response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={"query": PROMQL_QUERY})
+    data = response.json()
+    try:
+        latency = float(data["data"]["result"][0]["value"][1])
+        return latency
+    except (IndexError, KeyError):
+        print("No latency data found.")
+        return None
+
+def send_email_alert(latency):
+    msg = MIMEText(f"⚠️ High latency detected: {latency:.3f} seconds at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    msg["Subject"] = "Latency Alert from SRE Tool"
+    msg["From"] = SMTP_USER
+    msg["To"] = ALERT_EMAIL
+
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(msg)
+        print("Alert email sent!")
+
+def main():
+    latency = fetch_latency()
+    if latency is not None:
+        print(f"Current latency: {latency:.3f} seconds")
+        if latency > LATENCY_THRESHOLD:
+            send_email_alert(latency)
+
+if __name__ == "__main__":
+    main()

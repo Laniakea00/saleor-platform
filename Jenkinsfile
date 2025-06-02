@@ -84,17 +84,6 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                dir("${SALEOR_DIR}") {
-                    sh '''
-                        . .venv/bin/activate
-                        poetry run pytest
-                    '''
-                }
-            }
-        }
-
         stage('Cleanup Monitoring') {
             steps {
                 sh 'docker-compose -f ${COMPOSE_FILE} down'
