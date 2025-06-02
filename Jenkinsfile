@@ -22,20 +22,6 @@ pipeline {
             }
         }
 
-        stage('Setup Python Environment & Install Dependencies') {
-            steps {
-                dir("${SALEOR_DIR}") {
-                    sh '''
-                        python3 -m venv .venv
-                        . .venv/bin/activate
-                        pip install --upgrade pip
-                        pip install poetry
-                        poetry install
-                    '''
-                }
-            }
-        }
-
         stage('Start Monitoring Services') {
             steps {
                 sh 'docker-compose -f ${COMPOSE_FILE} up -d'
